@@ -1,0 +1,29 @@
+{
+  "name": "opencode-go-hud",
+  "version": "1.0.0",
+  "description": "A lightweight status line HUD for OpenCode Go subscribers - displays context usage, official rolling/weekly/monthly quota, and project info",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node dist/index.js"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-go",
+    "claude-code",
+    "statusline",
+    "hud",
+    "coding-plan"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "typescript": "^6.0.2"
+  }
+}
