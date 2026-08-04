@@ -10,15 +10,27 @@ export function renderIdentityLine(ctx: RenderContext): string | null {
   const { stdin, config, usageData } = ctx;
   if (!config.display.showModel) return null;
 
-  // Model name priority: cc-switch env carries the REAL backend model
-  // (e.g. deepseek-v4-flash); stdin.model.display_name is the Claude shell's
-  // name (e.g. "Sonnet 4.6") and is not the actual model.
-  const envModelName = process.env[config.activation.envKey]
-    ?? process.env.CLAUDE_CODE_SUBAGENT_MODEL;
-  let modelName = envModelName
-    ?? stdin.model?.display_name
+  // Model name: prefer what Claude Code reports on stdin — when the *_NAME
+  // env mapping is set, stdin.model.display_name reflects the real backend
+  // model (e.g. "glm-5.2" after switching to the Opus slot). If stdin only
+  // carries a Claude shell name (e.g. "Opus 4.8"), map it to the real model
+  // via the matching tier env var.
+  const envForTier: Record<string, string> = {
+    sonnet: 'ANTHROPIC_DEFAULT_SONNET_MODEL_NAME',
+    opus: 'ANTHROPIC_DEFAULT_OPUS_MODEL_NAME',
+    haiku: 'ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME',
+    fable: 'ANTHROPIC_DEFAULT_FABLE_MODEL_NAME',
+  };
+  let modelName = stdin.model?.display_name
     ?? stdin.model?.id
+    ?? process.env[config.activation.envKey]
+    ?? process.env.CLAUDE_CODE_SUBAGENT_MODEL
     ?? 'OpenCode Go';
+  const tierMatch = /^(sonnet|opus|haiku|fable)\b/i.exec(modelName);
+  if (tierMatch) {
+    const real = process.env[envForTier[tierMatch[1].toLowerCase()]];
+    if (real) modelName = real;
+  }
 
   // Color based on rolling usage
   const rollingPct = usageData?.rolling?.percent ?? 0;
