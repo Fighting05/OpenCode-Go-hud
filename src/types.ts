@@ -82,9 +82,9 @@ export interface UsageData {
 }
 
 export interface UsageCache {
-  rolling: number | null;
-  weekly: number | null;
-  monthly: number | null;
+  rolling: Usage | null;
+  weekly: Usage | null;
+  monthly: Usage | null;
 }
 
 // ============================================================================

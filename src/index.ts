@@ -85,9 +85,9 @@ async function main(): Promise<void> {
 
     if (cached) {
       usage = {
-        rolling: cached.rolling != null ? { percent: cached.rolling, resetInSec: null, status: null } : null,
-        weekly: cached.weekly != null ? { percent: cached.weekly, resetInSec: null, status: null } : null,
-        monthly: cached.monthly != null ? { percent: cached.monthly, resetInSec: null, status: null } : null,
+        rolling: cached.rolling,
+        weekly: cached.weekly,
+        monthly: cached.monthly,
       };
     } else {
       const fetched = await fetchOpenCodeUsage(config.opencode);
@@ -97,9 +97,9 @@ async function main(): Promise<void> {
         usage = fetched;
       } else {
         const cacheEntry: UsageCache = {
-          rolling: fetched.rolling?.percent ?? null,
-          weekly: fetched.weekly?.percent ?? null,
-          monthly: fetched.monthly?.percent ?? null,
+          rolling: fetched.rolling ?? null,
+          weekly: fetched.weekly ?? null,
+          monthly: fetched.monthly ?? null,
         };
         writeCache(cacheEntry);
         usage = fetched;

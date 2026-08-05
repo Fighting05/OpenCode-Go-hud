@@ -5,7 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import type { UsageCache } from './types.js';
+import type { Usage, UsageCache } from './types.js';
 
 // ============================================================================
 // Constants
@@ -30,6 +30,27 @@ function getCachePath(): string {
 // Cache Operations
 // ============================================================================
 
+/**
+ * Normalize one cached window entry. Old caches stored bare percentages
+ * (numbers); current format stores the full Usage object.
+ */
+function normalizeWindow(value: unknown): Usage | null {
+  if (value == null) return null;
+  if (typeof value === 'number') {
+    return { percent: value, resetInSec: null, status: null };
+  }
+  if (typeof value === 'object' && typeof (value as Partial<Usage>).percent === 'number') {
+    const v = value as Partial<Usage>;
+    return {
+      percent: v.percent as number,
+      resetInSec: v.resetInSec ?? null,
+      status: v.status ?? null,
+      resetText: v.resetText ?? null,
+    };
+  }
+  return null;
+}
+
 export function readCache(): UsageCache | null {
   try {
     const cachePath = getCachePath();
@@ -38,9 +59,23 @@ export function readCache(): UsageCache | null {
     const content = fs.readFileSync(cachePath, 'utf8');
     const cache = JSON.parse(content);
 
-    if (Date.now() - cache.timestamp > CACHE_TTL_MS) return null;
+    const ageMs = Date.now() - cache.timestamp;
+    if (ageMs > CACHE_TTL_MS) return null;
 
-    return cache.usage as UsageCache;
+    // Keep the reset countdown roughly live within the TTL window.
+    const elapsedSec = Math.max(0, Math.floor(ageMs / 1000));
+    const rawUsage = cache.usage ?? {};
+    const adjust = (value: unknown): Usage | null => {
+      const u = normalizeWindow(value);
+      if (u && u.resetInSec != null) u.resetInSec = Math.max(0, u.resetInSec - elapsedSec);
+      return u;
+    };
+
+    return {
+      rolling: adjust(rawUsage.rolling),
+      weekly: adjust(rawUsage.weekly),
+      monthly: adjust(rawUsage.monthly),
+    };
   } catch {
     return null;
   }
